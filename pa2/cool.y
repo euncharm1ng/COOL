@@ -105,7 +105,6 @@ extern int VERBOSE_ERRORS;
 %type <expressions> expressions_semi
 %type <expression> expression
 %type <expression> expression_let_in
-%type <expression> maybe_assign_expr
 %type <cases> cases
 %type <case_> case
 
@@ -159,8 +158,10 @@ feature_list:
 feature:
 		OBJECTID '(' formals ')' ':' TYPEID '{' expression '}' ';'
 				{ $$ = method($1, $3, $6, $8); }
-		| OBJECTID ':' TYPEID maybe_assign_expr ';'
-				{ $$ = attr($1, $3, $4); }
+		| OBJECTID ':' TYPEID ASSIGN expression ';'
+				{ $$ = attr($1, $3, $5); }
+		| OBJECTID ':' TYPEID ';'
+				{ $$ = attr($1, $3, no_expr()); }
 		;
 
 formals:
@@ -178,21 +179,27 @@ formal:
 		;
 
 expressions_comma:
-		expression
+		/* empty */
+				{ $$ = nil_Expressions(); }
+		| expression
 				{ $$ = single_Expressions($1); }
 		| expressions_comma ',' expression
 				{ $$ = append_Expressions($1, single_Expressions($3)); }
 		;
 
 expressions_semi:
-		expression ';'
+		/* empty */
+				{ $$ = nil_Expressions(); }
+		| expression ';'
 				{ $$ = single_Expressions($1); }
 		| expressions_semi expression ';'
 				{ $$ = append_Expressions($1, single_Expressions($2)); }
 		;
 
 expression:
-		OBJECTID ASSIGN expression
+		/* empty */
+				{ $$ = no_expr(); }
+		| OBJECTID ASSIGN expression
 				{ $$ = assign($1, $3); }
 		| expression '.' OBJECTID '(' expressions_comma ')' 
 				{ $$ = dispatch($1, $3, $5); }
@@ -206,8 +213,10 @@ expression:
 				{ $$ = loop($2, $4); }
 		| '{' expressions_semi '}'
 				{ $$ = block($2); }
-	 	| LET expression_let_in
-				{ $$ = $2; }
+		| LET OBJECTID ':' TYPEID  expression_let_in
+				{ $$ = let($2, $4, no_expr(), $5); }
+		| LET OBJECTID ':' TYPEID ASSIGN expression expression_let_in
+				{ $$ = let($2, $4, $6, $7); }
 		| CASE expression OF cases ESAC
 				{ $$ = typcase($2, $4); }
 		| NEW TYPEID
@@ -245,21 +254,18 @@ expression:
 		;
 
 expression_let_in:
-		OBJECTID ':' TYPEID maybe_assign_expr IN expression
-				{ $$ = let($1, $3, $4, $6); }
-		| OBJECTID ':' TYPEID maybe_assign_expr ',' expression_let_in
-				{ $$ = let ($1, $3, $4, $6); }
-		;
-	
-maybe_assign_expr:
-		/* empty */
-				{ no_expr(); }
-		| ASSIGN expression
+		IN expression
 				{ $$ = $2; }
+		| ',' OBJECTID ':' TYPEID ASSIGN expression expression_let_in
+				{ $$ = let($2, $4, $6, $7); }
+		| ',' OBJECTID ':' TYPEID expression_let_in
+				{ $$ = let($2, $4, no_expr(), $5); }
 		;
 
 cases: 
-	case
+	/* empty */
+			{$$ = nil_Cases(); }
+	| case
 			{ $$ = single_Cases($1); }
 	| cases case
 			{ $$ = append_Cases($1, single_Cases($2)); }
