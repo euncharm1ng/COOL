@@ -27,3 +27,11 @@ Class D inherts A {
 Class E inherits A {
 ;
 
+Class G {
+	hello(): Int{
+		if x = 1 then true else
+			{ if x = 2 then true else false fi }
+		fi
+	};
+};
+

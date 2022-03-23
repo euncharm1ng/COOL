@@ -104,13 +104,13 @@ extern int VERBOSE_ERRORS;
 %type <expressions> expressions_comma
 %type <expressions> expressions_semi
 %type <expression> expression
-%type <expression> expression_let_in
-%type <expression> maybe_assign_expr
+%type <expression> let_expr
 %type <cases> cases
 %type <case_> case
 
 /* Precedence declarations go here. */
 
+%left IN
 %right ASSIGN
 %left NOT
 %nonassoc LE '<' '='
@@ -133,24 +133,27 @@ program :
 class_list : 
 		class            /* single class */
                 { $$ = single_Classes($1); }
-        | class_list class /* several classes */
+        | class_list class  /* several classes */
                 { $$ = append_Classes($1,single_Classes($2)); }
         ;
 
 /* If no parent is specified, the class inherits from the Object class. */
 class  : 
-		CLASS TYPEID '{' feature_list '}' ';'
-                { $$ = class_($2,idtable.add_string("Object"),$4,
-                              stringtable.add_string(curr_filename)); }
+		CLASS TYPEID '{' '}' ';'
+                { $$ = class_($2,idtable.add_string("Object"), nil_Features(), stringtable.add_string(curr_filename)); }
+        | CLASS TYPEID INHERITS TYPEID '{' '}' ';'
+                { $$ = class_($2, $4, nil_Features(), stringtable.add_string(curr_filename)); }
+		| CLASS TYPEID '{' feature_list '}' ';'
+                { $$ = class_($2,idtable.add_string("Object"),$4, stringtable.add_string(curr_filename)); }
         | CLASS TYPEID INHERITS TYPEID '{' feature_list '}' ';'
                 { $$ = class_($2,$4,$6,stringtable.add_string(curr_filename)); }
+		| error ';'
+				{}
         ;
 
 /* Feature list may be empty, but no empty features in list. */
 feature_list:        
-		/* empty */
-                { $$ = nil_Features(); }
-		| feature
+		feature 
 				{ $$ = single_Features($1); }
 		| feature_list feature 
 				{ $$ = append_Features($1, single_Features($2)); }
@@ -159,8 +162,10 @@ feature_list:
 feature:
 		OBJECTID '(' formals ')' ':' TYPEID '{' expression '}' ';'
 				{ $$ = method($1, $3, $6, $8); }
-		| OBJECTID ':' TYPEID maybe_assign_expr ';'
-				{ $$ = attr($1, $3, $4); }
+		| OBJECTID ':' TYPEID ';'
+				{ $$ = attr($1, $3, no_expr()); }
+		| OBJECTID ':' TYPEID ASSIGN expression ';'
+				{ $$ = attr($1, $3, $5); }
 		;
 
 formals:
@@ -173,12 +178,14 @@ formals:
 		;
 
 formal:
-		OBJECTID ':' TYPEID
+		OBJECTID ':' TYPEID 
 			{ $$ = formal($1, $3); }
 		;
 
 expressions_comma:
-		expression
+		/* empty */
+				{ $$ = nil_Expressions(); }
+		| expression
 				{ $$ = single_Expressions($1); }
 		| expressions_comma ',' expression
 				{ $$ = append_Expressions($1, single_Expressions($3)); }
@@ -206,7 +213,7 @@ expression:
 				{ $$ = loop($2, $4); }
 		| '{' expressions_semi '}'
 				{ $$ = block($2); }
-	 	| LET expression_let_in
+		| LET let_expr
 				{ $$ = $2; }
 		| CASE expression OF cases ESAC
 				{ $$ = typcase($2, $4); }
@@ -242,21 +249,27 @@ expression:
 				{ $$ = string_const($1); }
 		| BOOL_CONST
 				{ $$ = bool_const($1); }
+		| error expression {}
+		| error ',' {}
+		| error ';' {}
+		| error FI {}
+		| error POOL {}
+		| error ESAC {}
+		| error IN {}
+		| 
 		;
 
-expression_let_in:
-		OBJECTID ':' TYPEID maybe_assign_expr IN expression
-				{ $$ = let($1, $3, $4, $6); }
-		| OBJECTID ':' TYPEID maybe_assign_expr ',' expression_let_in
-				{ $$ = let ($1, $3, $4, $6); }
+let_expr :
+		OBJECTID ':' TYPEID IN expression
+				{ $$ = let($1, $3, no_expr(), $5); }
+		| OBJECTID ':' TYPEID ASSIGN expression IN expression
+				{ $$ = let($1, $3, $5, $7); }
+		| OBJECTID ':' TYPEID ',' let_expr
+				{ $$ = let($1, $3, no_expr(), $5); }
+		| OBJECTID ':' TYPEID ASSIGN expression ',' let_expr
+				{ $$ = let($1, $3, $5, $7); }
 		;
 	
-maybe_assign_expr:
-		/* empty */
-				{ no_expr(); }
-		| ASSIGN expression
-				{ $$ = $2; }
-		;
 
 cases: 
 	case
