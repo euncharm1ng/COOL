@@ -1,0 +1,26 @@
+#5
+_program
+  #5
+  _class
+    Main
+    Object
+    "letnestedx.cl"
+    (
+    #4
+    _method
+      main
+      Int
+      #4
+      _let
+        x
+        Bool
+        #3
+        _bool
+          1
+        : Bool
+        #3
+        _int
+          0
+        : Int
+      : Int
+    )

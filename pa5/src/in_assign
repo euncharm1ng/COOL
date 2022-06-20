@@ -1,0 +1,29 @@
+#5
+_program
+  #5
+  _class
+    Main
+    Object
+    "sub.cl"
+    (
+    #4
+    _method
+      main
+      Int
+      #4
+      _let
+        a
+        Int
+        #3
+        _no_expr
+        : _no_type
+        #4
+        _assign
+          a
+          #3
+          _int
+            1
+          : Int
+        : Int
+      : Int
+    )

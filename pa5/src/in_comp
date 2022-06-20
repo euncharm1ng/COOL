@@ -1,0 +1,20 @@
+#5
+_program
+  #5
+  _class
+    Main
+    Object
+    "comp.cl"
+    (
+    #4
+    _method
+      main
+      Bool
+      #4
+      _comp
+        #3
+        _bool
+          1
+        : Bool
+      : Bool
+    )

@@ -1,0 +1,20 @@
+#5
+_program
+  #5
+  _class
+    Main
+    Object
+    "sub.cl"
+    (
+    #4
+    _method
+      main
+      Int
+      #4
+      _neg
+        #3
+        _int
+          2
+        : Int
+      : Int
+    )
